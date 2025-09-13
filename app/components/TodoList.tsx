@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { addTodosToDB, toggleTodoInDB, editTodoInDB, deleteTodoFromDB } from '@/app/serverActions/todoActions'; // Import server actions
 
 interface Todo {
     id: number;
@@ -13,7 +14,7 @@ export default function TodoList() {
     const [textareaValue, setTextareaValue] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
 
-    const addTodos = () => {
+    const addTodos = async () => {
         const newTodos = textareaValue
             .split('\n')
             .filter((line) => line.trim() !== '')
@@ -22,27 +23,40 @@ export default function TodoList() {
                 text: line.trim().replace(/-/g, '').toLocaleLowerCase(),
                 done: false,
             }));
+
         setTodos((prev) => [...prev, ...newTodos]);
         setTextareaValue('');
+
+        // Call server action
+        await addTodosToDB(newTodos);
     };
 
-    const toggleDone = (id: number) => {
+    const toggleDone = async (id: number) => {
         setTodos((prev) => {
             const updatedTodos = prev.map((todo) =>
                 todo.id === id ? { ...todo, done: !todo.done } : todo
             );
-            return updatedTodos.sort((a, b) => Number(a.done) - Number(b.done)); // Sort by done status
+            return updatedTodos.sort((a, b) => Number(a.done) - Number(b.done));
         });
+
+        // Call server action
+        await toggleTodoInDB(id, !todos.find((todo) => todo.id === id)?.done);
     };
 
-    const editTodo = (id: number, newText: string) => {
+    const editTodo = async (id: number, newText: string) => {
         setTodos((prev) =>
             prev.map((todo) => (todo.id === id ? { ...todo, text: newText } : todo))
         );
+
+        // Call server action
+        await editTodoInDB(id, newText);
     };
 
-    const deleteTodo = (id: number) => {
+    const deleteTodo = async (id: number) => {
         setTodos((prev) => prev.filter((todo) => todo.id !== id));
+
+        // Call server action
+        await deleteTodoFromDB(id);
     };
 
     const startEditing = (id: number) => {
@@ -73,8 +87,7 @@ export default function TodoList() {
                 value={textareaValue}
                 onChange={(e) => setTextareaValue(e.target.value)}
                 onKeyDown={handleKeyDown} // Call addTodos on Enter key press
-                placeholder="Enter todos, one per line and hit enter :)"
-
+                placeholder="Enter todos, one per line, and hit Enter :)"
             />
             <ul style={{ padding: 0, listStyle: 'none' }}>
                 {todos.map((todo) => (
