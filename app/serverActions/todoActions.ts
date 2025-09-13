@@ -9,6 +9,24 @@ const db = mysql.createPool({
   database: process.env.TF_VAR_mysql_database,
 });
 
+// Define a TypeScript interface for the database rows
+interface TodoRow {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
+export async function fetchTodosFromDB(): Promise<TodoRow[]> {
+  const [rows] = await db.query<mysql.RowDataPacket[]>(
+    "SELECT id, text, done FROM todos ORDER BY done ASC, id ASC"
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    text: row.text,
+    done: row.done === 1,
+  }));
+}
+
 export async function addTodosToDB(
   todos: { id: number; text: string; done: boolean }[]
 ) {
