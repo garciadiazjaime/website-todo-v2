@@ -88,3 +88,7 @@ h1 {
   text-decoration: line-through;
   color: #888;
 }
+
+textarea::placeholder {
+  font-size: 18px; /* Increase placeholder font size */
+}
