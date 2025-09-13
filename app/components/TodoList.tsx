@@ -14,6 +14,7 @@ export default function TodoList() {
     const [textareaValue, setTextareaValue] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true); // Loading state
+    const [resetTriggered, setResetTriggered] = useState(false); // Track if reset was triggered
 
     // Fetch todos from the database when the component mounts
     useEffect(() => {
@@ -37,10 +38,16 @@ export default function TodoList() {
                 done: false,
             }));
 
-        setTodos((prev) => [...prev, ...newTodos]);
-        setTextareaValue('');
+        if (resetTriggered) {
+            // Remove existing todos only if reset was triggered
+            await Promise.all(todos.map((todo) => deleteTodoFromDB(todo.id)));
+        }
 
-        // Call server action
+        setTodos(newTodos);
+        setTextareaValue('');
+        setResetTriggered(false); // Reset the flag after adding todos
+
+        // Call server action to save new todos
         await addTodosToDB(newTodos);
     };
 
@@ -93,10 +100,17 @@ export default function TodoList() {
         }
     };
 
+    const resetTodos = () => {
+        // Move all todos into the textarea, one per line
+        const todosText = todos.map((todo) => todo.text).join('\n');
+        setTextareaValue(todosText);
+        setResetTriggered(true); // Set the flag to indicate reset was triggered
+    };
+
     return (
-        <div className="todo-list" style={{ fontSize: '1.2rem' }}>
+        <div className="todo-list" style={{ fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto' }}>
             {loading ? ( // Show loading spinner while fetching todos
-                <div>Loading...</div>
+                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#555' }}>Loading...</div>
             ) : (
                 <>
                     <textarea
@@ -105,7 +119,34 @@ export default function TodoList() {
                         onChange={(e) => setTextareaValue(e.target.value)}
                         onKeyDown={handleKeyDown} // Call addTodos on Enter key press
                         placeholder="Enter todos, one per line, and hit Enter :)"
+                        style={{
+                            width: '100%',
+                            height: '100px',
+                            padding: '10px',
+                            fontSize: '1rem',
+                            border: '1px solid #ccc',
+                            borderRadius: '5px',
+                            marginBottom: '10px',
+                            resize: 'none',
+                        }}
                     />
+                    <button
+                        onClick={resetTodos}
+                        className="reset-button"
+                        style={{
+                            margin: '0 0 24px',
+                            padding: '10px',
+                            fontSize: '1rem',
+                            width: '100%',
+                            backgroundColor: '#007BFF',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Reset
+                    </button>
                     <ul style={{ padding: 0, listStyle: 'none' }}>
                         {todos.map((todo) => (
                             <li
@@ -117,36 +158,80 @@ export default function TodoList() {
                                     alignItems: 'center',
                                     marginBottom: '10px',
                                     gap: '10px',
-                                    backgroundColor: "white",
-                                    padding: "12px",
-                                    opacity: todo.done ? 0.6 : 1,
+                                    backgroundColor: todo.done ? '#f8f9fa' : '#ffffff',
+                                    padding: '12px',
+                                    borderRadius: '5px',
+                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                    opacity: todo.done ? 0.7 : 1,
+                                    transition: 'background-color 0.3s, opacity 0.3s',
                                 }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'space-between', width: '100%' }}>
-                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16 }}>
-                                        <button onClick={() => toggleDone(todo.id)} style={{ background: 'none', cursor: 'pointer', width: 50, minHeight: 50, height: '100%', fontSize: 34, border: '1px solid black' }}>
-                                            {todo.done ? '✔️' : ''}
-                                        </button>
-                                        {editingId === todo.id ? (
-                                            <input
-                                                type="text"
-                                                value={todo.text}
-                                                onChange={(e) => editTodo(todo.id, e.target.value)}
-                                                onKeyDown={(e) => handleEditKeyDown(e, todo.id)} // Exit edit mode on Enter or Esc key press
-                                                onBlur={stopEditing}
-                                                autoFocus
-                                                style={{ flex: 1, fontSize: 40, width: '100%' }}
-                                            />
-                                        ) : (
-                                            <div style={{ flex: 1, height: '100%', width: '100%', alignContent: 'center', fontSize: 40, textTransform: 'capitalize', wordBreak: 'break-word', textDecoration: todo.done ? 'line-through' : 'none' }}>{todo.text}</div>
-                                        )}
-                                    </div>
-
-                                    {!todo.done ? <button onClick={() => deleteTodo(todo.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', minHeight: '100%', width: '44px', fontSize: 16 }}>
-                                        🗑️
-                                    </button> : null}
-
+                                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                    <button
+                                        onClick={() => toggleDone(todo.id)}
+                                        style={{
+                                            background: todo.done ? '#28a745' : 'none',
+                                            color: todo.done ? 'white' : 'black',
+                                            cursor: 'pointer',
+                                            width: '40px',
+                                            height: '40px',
+                                            fontSize: '1.2rem',
+                                            border: '1px solid #ccc',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            marginRight: '10px',
+                                            borderRadius: '5px',
+                                        }}
+                                    >
+                                        {todo.done ? '✔️' : ''}
+                                    </button>
+                                    {editingId === todo.id ? (
+                                        <input
+                                            type="text"
+                                            value={todo.text}
+                                            onChange={(e) => editTodo(todo.id, e.target.value)}
+                                            onKeyDown={(e) => handleEditKeyDown(e, todo.id)} // Exit edit mode on Enter or Esc key press
+                                            onBlur={stopEditing}
+                                            autoFocus
+                                            style={{
+                                                flex: 1,
+                                                fontSize: '1rem',
+                                                padding: '5px',
+                                                border: '1px solid #ccc',
+                                                borderRadius: '5px',
+                                            }}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                flex: 1,
+                                                fontSize: '1.2rem',
+                                                textTransform: 'capitalize',
+                                                wordBreak: 'break-word',
+                                                textDecoration: todo.done ? 'line-through' : 'none',
+                                                color: todo.done ? '#6c757d' : '#212529',
+                                            }}
+                                        >
+                                            {todo.text}
+                                        </div>
+                                    )}
                                 </div>
+
+                                {!todo.done ? (
+                                    <button
+                                        onClick={() => deleteTodo(todo.id)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: '#dc3545',
+                                            fontSize: '1.2rem',
+                                        }}
+                                    >
+                                        🗑️
+                                    </button>
+                                ) : null}
                             </li>
                         ))}
                     </ul>
