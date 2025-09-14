@@ -98,7 +98,7 @@ export default function TodoList(
     const handleTextAreaKeyDown = (
         e: React.KeyboardEvent<HTMLTextAreaElement>
     ) => {
-        if (e.key === "Enter" && e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             addTodos();
             setResetTriggered(false);
@@ -110,8 +110,7 @@ export default function TodoList(
     };
 
     const handleEditKeyDown = (
-        e: React.KeyboardEvent<HTMLInputElement>,
-        id: number
+        e: React.KeyboardEvent<HTMLInputElement>
     ) => {
         if (e.key === "Enter" || e.key === "Escape") {
             stopEditing();
@@ -122,6 +121,7 @@ export default function TodoList(
         const todosText = todos.map((todo) => todo.text).join("\n");
         setTextareaValue(todosText);
         setResetTriggered(true);
+        setTodos([]);
     };
 
     return (
