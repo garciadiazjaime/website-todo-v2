@@ -11,7 +11,9 @@ import {
 } from "@/app/serverActions/todoActions";
 import { Todo } from "@/app/types";
 
-export default function TodoList(props: { initialTodos: Todo[] } = { initialTodos: [] }) {
+export default function TodoList(
+    props: { initialTodos: Todo[] } = { initialTodos: [] }
+) {
     const { initialTodos } = props;
     const [todos, setTodos] = useState<Todo[]>(initialTodos);
     const [textareaValue, setTextareaValue] = useState("");
@@ -131,48 +133,50 @@ export default function TodoList(props: { initialTodos: Todo[] } = { initialTodo
                 margin: "0 auto",
             }}
         >
-            {loading ? (
-                <div style={{ textAlign: "center", fontSize: "1.5rem", color: "#555" }}>
-                    Loading...
-                </div>
-            ) : (
-                <>
-                    <textarea
-                        name="todo-input"
-                        value={textareaValue}
-                        onChange={(e) => setTextareaValue(e.target.value)}
-                        onKeyDown={handleTextAreaKeyDown} // Call addTodos on Enter key press
-                        placeholder="Enter todos, one per line, and hit Enter :)"
-                        style={{
-                            width: "100%",
-                            height: "40vh",
-                            padding: "10px",
-                            fontSize: 26,
-                            border: "1px solid #ccc",
-                            borderRadius: "5px",
-                            marginBottom: "10px",
-                            resize: "none",
-                        }}
-                    />
-                    <button
-                        onClick={resetTodos}
-                        className="reset-button"
-                        style={{
-                            margin: "0 0 24px",
-                            padding: "10px",
-                            fontSize: "1rem",
-                            width: "100%",
-                            backgroundColor: resetTriggered ? "#CCC" : "#007BFF",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "5px",
-                            cursor: resetTriggered ? "none" : "pointer",
-                        }}
-                        disabled={resetTriggered ? true : undefined}
-                    >
-                        Reset
-                    </button>
+            <>
+                <textarea
+                    name="todo-input"
+                    value={textareaValue}
+                    onChange={(e) => setTextareaValue(e.target.value)}
+                    onKeyDown={handleTextAreaKeyDown} // Call addTodos on Enter key press
+                    placeholder="Enter todos, one per line, and hit Enter :)"
+                    style={{
+                        width: "100%",
+                        height: "40vh",
+                        padding: "10px",
+                        fontSize: 26,
+                        border: "1px solid #ccc",
+                        borderRadius: "5px",
+                        marginBottom: "10px",
+                        resize: "none",
+                    }}
+                />
+                <button
+                    onClick={resetTodos}
+                    className="reset-button"
+                    style={{
+                        margin: "0 0 24px",
+                        padding: "10px",
+                        fontSize: "1rem",
+                        width: "100%",
+                        backgroundColor: resetTriggered ? "#CCC" : "#007BFF",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "5px",
+                        cursor: resetTriggered ? "none" : "pointer",
+                    }}
+                    disabled={resetTriggered ? true : undefined}
+                >
+                    Reset
+                </button>
 
+                {loading ? (
+                    <div
+                        style={{ textAlign: "center", fontSize: "1.5rem", color: "#555" }}
+                    >
+                        Loading...
+                    </div>
+                ) : (
                     <ul style={{ padding: 0, listStyle: "none" }}>
                         {todos.map((todo) => (
                             <li
@@ -267,8 +271,8 @@ export default function TodoList(props: { initialTodos: Todo[] } = { initialTodo
                             </li>
                         ))}
                     </ul>
-                </>
-            )}
+                )}
+            </>
         </div>
     );
 }
