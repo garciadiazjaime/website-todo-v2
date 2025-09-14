@@ -227,7 +227,7 @@ export default function TodoList(
                                             type="text"
                                             value={todo.text}
                                             onChange={(e) => editTodo(todo.id, e.target.value)}
-                                            onKeyDown={(e) => handleEditKeyDown(e, todo.id)}
+                                            onKeyDown={(e) => handleEditKeyDown(e)}
                                             onBlur={stopEditing}
                                             autoFocus
                                             style={{
