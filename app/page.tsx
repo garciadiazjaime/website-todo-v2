@@ -1,9 +1,12 @@
-import TodoList from './components/TodoList';
+import TodoList from '@/app/components/TodoList';
+import { fetchTodosFromDB } from '@/app/serverActions/todoActions';
 
-export default function Home() {
+export default async function Home() {
+  const todos = await fetchTodosFromDB();
+
   return (
     <div className="container">
-      <TodoList />
+      <TodoList initialTodos={todos} />
     </div>
   );
 }
