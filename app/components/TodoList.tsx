@@ -11,11 +11,8 @@ import {
 } from "@/app/serverActions/todoActions";
 import { Todo } from "@/app/types";
 
-export default function TodoList(
-    props: { initialTodos: Todo[] } = { initialTodos: [] }
-) {
-    const { initialTodos } = props;
-    const [todos, setTodos] = useState<Todo[]>(initialTodos);
+export default function TodoList() {
+    const [todos, setTodos] = useState<Todo[]>([]);
     const [textareaValue, setTextareaValue] = useState("");
     const [editingId, setEditingId] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
@@ -23,10 +20,6 @@ export default function TodoList(
 
     useEffect(() => {
         const fetchTodos = async () => {
-            if (initialTodos.length > 0) {
-                return;
-            }
-
             setLoading(true);
             const fetchedTodos = await fetchTodosFromDB();
             setTodos(fetchedTodos);
