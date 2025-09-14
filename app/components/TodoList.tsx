@@ -1,28 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchTodosFromDB, addTodosToDB, toggleTodoInDB, editTodoInDB, deleteTodoFromDB } from '@/app/serverActions/todoActions'; // Import server actions
+import { fetchTodosFromDB, addTodosToDB, truncateTodosTable, toggleTodoInDB, editTodoInDB, deleteTodoFromDB } from '@/app/serverActions/todoActions'; // Import server actions
+import { Todo } from '@/app/types';
 
-interface Todo {
-    id: number;
-    text: string;
-    done: boolean;
-}
 
 export default function TodoList() {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [textareaValue, setTextareaValue] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true); // Loading state
-    const [resetTriggered, setResetTriggered] = useState(false); // Track if reset was triggered
+    const [loading, setLoading] = useState(true);
+    const [resetTriggered, setResetTriggered] = useState(false);
 
-    // Fetch todos from the database when the component mounts
     useEffect(() => {
         const fetchTodos = async () => {
-            setLoading(true); // Show loading spinner
-            const fetchedTodos = await fetchTodosFromDB(); // Fetch todos from the database
+            setLoading(true);
+            const fetchedTodos = await fetchTodosFromDB();
             setTodos(fetchedTodos);
-            setLoading(false); // Hide loading spinner
+            setLoading(false);
         };
 
         fetchTodos();
@@ -34,20 +29,23 @@ export default function TodoList() {
             .filter((line) => line.trim() !== '')
             .map((line, index) => ({
                 id: Date.now() + index,
-                text: line.trim().replace(/-/g, '').toLocaleLowerCase(),
+                text: line.replace(/-/g, '').trim().toLocaleLowerCase(),
                 done: false,
             }));
 
         if (resetTriggered) {
-            // Remove existing todos only if reset was triggered
-            await Promise.all(todos.map((todo) => deleteTodoFromDB(todo.id)));
+            await truncateTodosTable();
+            setTodos(newTodos);
+        } else {
+            setTodos((prevTodos) => {
+                const updatedTodos = [...prevTodos, ...newTodos];
+                return updatedTodos;
+            });
         }
 
-        setTodos(newTodos);
         setTextareaValue('');
-        setResetTriggered(false); // Reset the flag after adding todos
+        setResetTriggered(false);
 
-        // Call server action to save new todos
         await addTodosToDB(newTodos);
     };
 
@@ -59,7 +57,6 @@ export default function TodoList() {
             return updatedTodos.sort((a, b) => Number(a.done) - Number(b.done));
         });
 
-        // Call server action
         await toggleTodoInDB(id, !todos.find((todo) => todo.id === id)?.done);
     };
 
@@ -68,14 +65,12 @@ export default function TodoList() {
             prev.map((todo) => (todo.id === id ? { ...todo, text: newText } : todo))
         );
 
-        // Call server action
         await editTodoInDB(id, newText);
     };
 
     const deleteTodo = async (id: number) => {
         setTodos((prev) => prev.filter((todo) => todo.id !== id));
 
-        // Call server action
         await deleteTodoFromDB(id);
     };
 
@@ -87,29 +82,33 @@ export default function TodoList() {
         setEditingId(null);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Prevents a new line in the textarea
+    const handleTextAreaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && e.shiftKey) {
+            e.preventDefault();
             addTodos();
+            setResetTriggered(false);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setResetTriggered(false);
+            setTextareaValue('');
         }
     };
 
     const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, id: number) => {
         if (e.key === 'Enter' || e.key === 'Escape') {
-            stopEditing(); // Exit edit mode on Enter or Esc key press
+            stopEditing();
         }
     };
 
     const resetTodos = () => {
-        // Move all todos into the textarea, one per line
         const todosText = todos.map((todo) => todo.text).join('\n');
         setTextareaValue(todosText);
-        setResetTriggered(true); // Set the flag to indicate reset was triggered
+        setResetTriggered(true);
     };
 
     return (
         <div className="todo-list" style={{ fontFamily: 'Arial, sans-serif', maxWidth: '600px', margin: '0 auto' }}>
-            {loading ? ( // Show loading spinner while fetching todos
+            {loading ? (
                 <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#555' }}>Loading...</div>
             ) : (
                 <>
@@ -117,13 +116,13 @@ export default function TodoList() {
                         name='todo-input'
                         value={textareaValue}
                         onChange={(e) => setTextareaValue(e.target.value)}
-                        onKeyDown={handleKeyDown} // Call addTodos on Enter key press
+                        onKeyDown={handleTextAreaKeyDown} // Call addTodos on Enter key press
                         placeholder="Enter todos, one per line, and hit Enter :)"
                         style={{
                             width: '100%',
-                            height: '100px',
+                            height: '40vh',
                             padding: '10px',
-                            fontSize: '1rem',
+                            fontSize: 26,
                             border: '1px solid #ccc',
                             borderRadius: '5px',
                             marginBottom: '10px',
@@ -138,21 +137,23 @@ export default function TodoList() {
                             padding: '10px',
                             fontSize: '1rem',
                             width: '100%',
-                            backgroundColor: '#007BFF',
+                            backgroundColor: resetTriggered ? '#CCC' : '#007BFF',
                             color: 'white',
                             border: 'none',
                             borderRadius: '5px',
-                            cursor: 'pointer',
+                            cursor: resetTriggered ? 'none' : 'pointer',
                         }}
+                        disabled={resetTriggered ? true : undefined}
                     >
                         Reset
                     </button>
+
                     <ul style={{ padding: 0, listStyle: 'none' }}>
                         {todos.map((todo) => (
                             <li
                                 key={todo.id}
                                 className={todo.done ? 'done' : ''}
-                                onDoubleClick={() => startEditing(todo.id)} // Enable edit mode on double-click
+                                onDoubleClick={() => startEditing(todo.id)}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -191,7 +192,7 @@ export default function TodoList() {
                                             type="text"
                                             value={todo.text}
                                             onChange={(e) => editTodo(todo.id, e.target.value)}
-                                            onKeyDown={(e) => handleEditKeyDown(e, todo.id)} // Exit edit mode on Enter or Esc key press
+                                            onKeyDown={(e) => handleEditKeyDown(e, todo.id)}
                                             onBlur={stopEditing}
                                             autoFocus
                                             style={{

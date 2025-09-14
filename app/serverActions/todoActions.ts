@@ -2,6 +2,8 @@
 
 import mysql from "mysql2/promise";
 
+import { Todo } from "@/app/types";
+
 const db = mysql.createPool({
   host: process.env.TF_VAR_mysql_host,
   user: process.env.TF_VAR_mysql_user,
@@ -9,14 +11,7 @@ const db = mysql.createPool({
   database: process.env.TF_VAR_mysql_database,
 });
 
-// Define a TypeScript interface for the database rows
-interface TodoRow {
-  id: number;
-  text: string;
-  done: boolean;
-}
-
-export async function fetchTodosFromDB(): Promise<TodoRow[]> {
+export async function fetchTodosFromDB(): Promise<Todo[]> {
   const [rows] = await db.query<mysql.RowDataPacket[]>(
     "SELECT id, text, done FROM todos ORDER BY done ASC, id ASC"
   );
@@ -32,6 +27,10 @@ export async function addTodosToDB(
 ) {
   const values = todos.map((todo) => [todo.id, todo.text, todo.done]);
   await db.query("INSERT INTO todos (id, text, done) VALUES ?", [values]);
+}
+
+export async function truncateTodosTable() {
+  await db.query("TRUNCATE TABLE todos");
 }
 
 export async function toggleTodoInDB(id: number, done: boolean) {

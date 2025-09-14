@@ -96,5 +96,8 @@ textarea::placeholder {
   .reset-button {
     display: none;
   }
-}
 
+  textarea {
+    display: none;
+  }
+}
