@@ -123,7 +123,7 @@ export default function TodoList(
         setTextareaValue(todosText);
         setResetTriggered(true);
     };
-    console.log({ initialTodos });
+
     return (
         <div
             className="todo-list"
