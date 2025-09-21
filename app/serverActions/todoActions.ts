@@ -2,7 +2,7 @@
 
 import mysql from "mysql2/promise";
 
-import { Todo } from "@/app/types";
+import { Todo, ListType } from "@/app/types";
 
 const db = mysql.createPool({
   host: process.env.TF_VAR_mysql_host,
@@ -11,9 +11,14 @@ const db = mysql.createPool({
   database: process.env.TF_VAR_mysql_database,
 });
 
-export async function fetchTodosFromDB(): Promise<Todo[]> {
+export async function fetchTodosFromDB(list: ListType): Promise<Todo[]> {
   const [rows] = await db.query<mysql.RowDataPacket[]>(
-    "SELECT id, text, done FROM todos ORDER BY done ASC, id ASC"
+    `SELECT id, text, done 
+      FROM todos 
+      WHERE list = ?
+      ORDER BY done ASC, id ASC
+    `,
+    [list]
   );
   return rows.map((row) => ({
     id: row.id,
@@ -23,10 +28,20 @@ export async function fetchTodosFromDB(): Promise<Todo[]> {
 }
 
 export async function addTodosToDB(
-  todos: { id: number; text: string; done: boolean }[]
+  todos: { id: number; text: string; done: boolean; list: ListType }[]
 ) {
-  const values = todos.map((todo) => [todo.id, todo.text, todo.done]);
-  await db.query("INSERT INTO todos (id, text, done) VALUES ?", [values]);
+  const values = todos.map((todo) => [
+    todo.id,
+    todo.text,
+    todo.done,
+    todo.list,
+  ]);
+  await db.query(
+    `
+    INSERT INTO todos (id, text, done, list) VALUES ?
+  `,
+    [values]
+  );
 }
 
 export async function truncateTodosTable() {

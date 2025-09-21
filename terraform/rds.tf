@@ -72,6 +72,7 @@ resource "null_resource" "init_db" {
         id BIGINT PRIMARY KEY AUTO_INCREMENT,
         text VARCHAR(255) NOT NULL,
         done BOOLEAN NOT NULL DEFAULT false,
+        list VARCHAR(50) NOT NULL DEFAULT 'default',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );"
     EOT
