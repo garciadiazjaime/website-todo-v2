@@ -11,7 +11,7 @@ import {
 } from "@/app/serverActions/todoActions";
 import { Todo, ListType } from "@/app/types";
 
-export default function TodoList(props: { list: ListType }) {
+export default function TodoList(props: { list: ListType, orientation: string }) {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [textareaValue, setTextareaValue] = useState("");
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -126,46 +126,57 @@ export default function TodoList(props: { list: ListType }) {
             }}
         >
             <>
-                <div style={{ position: "relative" }}>
-                    <textarea
-                        name="todo-input"
-                        value={textareaValue}
-                        onChange={(e) => setTextareaValue(e.target.value)}
-                        onKeyDown={handleTextAreaKeyDown} // Call addTodos on Enter key press
-                        placeholder={`items for ${props.list}...`}
-                        style={{
-                            width: "100%",
-                            height: "40vh",
-                            padding: "10px",
-                            fontSize: 26,
-                            border: "1px solid #ccc",
-                            borderRadius: "5px",
-                            marginBottom: "10px",
-                            resize: "none",
-                        }}
-                    />
-                    <button
-                        onClick={resetTodos}
-                        className="reset-button"
-                        style={{
-                            margin: "0 0 24px",
-                            padding: "10px",
-                            fontSize: "1rem",
-                            backgroundColor: resetTriggered ? "#CCC" : "#007BFF",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "5px",
-                            cursor: resetTriggered ? "none" : "pointer",
-                            position: "absolute",
-                            bottom: 0,
-                            right: 10,
-                            minHeight: 44,
-                        }}
-                        disabled={resetTriggered ? true : undefined}
-                    >
-                        Reset
-                    </button>
-                </div>
+                {props.orientation !== "portrait" ? (
+                    <div style={{ position: "relative" }}>
+                        <textarea
+                            name="todo-input"
+                            value={textareaValue}
+                            onChange={(e) => setTextareaValue(e.target.value)}
+                            onKeyDown={handleTextAreaKeyDown} // Call addTodos on Enter key press
+                            placeholder={`items for ${props.list}...`}
+                            style={{
+                                width: "100%",
+                                height: "40vh",
+                                padding: "10px",
+                                fontSize: 26,
+                                border: "1px solid #ccc",
+                                borderRadius: "5px",
+                                marginBottom: "10px",
+                                resize: "none",
+                            }}
+                        />
+                        <button
+                            onClick={resetTodos}
+                            className="reset-button"
+                            style={{
+                                margin: "0 0 24px",
+                                padding: "10px",
+                                fontSize: "1rem",
+                                backgroundColor: resetTriggered ? "#CCC" : "#007BFF",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "5px",
+                                cursor: resetTriggered ? "none" : "pointer",
+                                position: "absolute",
+                                bottom: 0,
+                                right: 10,
+                                minHeight: 44,
+                            }}
+                            disabled={resetTriggered ? true : undefined}
+                        >
+                            Reset
+                        </button>
+                    </div>
+                ) : <div style={{
+                    fontSize: "1.5rem",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    padding: "10px",
+                    color: "#333",
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: "5px",
+                    marginBottom: "20px",
+                }}>{props.list}</div>}
                 {loading ? (
                     <div
                         style={{ textAlign: "center", fontSize: "1.5rem", color: "#555" }}
