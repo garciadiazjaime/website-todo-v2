@@ -45,6 +45,7 @@ next-env.d.ts
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+.terraform.tfstate.lock.info
 crash.log
 override.tf
 override.tf.json

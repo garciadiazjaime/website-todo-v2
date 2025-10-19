@@ -24,3 +24,8 @@ variable "azs" {
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"] # Default AZs for us-east-1
 }
+
+variable "my_ip" {
+  description = "Your current public IP address with CIDR notation"
+  type        = string
+}

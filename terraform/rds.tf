@@ -35,7 +35,7 @@ resource "aws_security_group" "db_access" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip] # Use the variable instead of hardcoded IP
   }
 
   egress {
