@@ -7,10 +7,11 @@ import {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
+    const params = await context.params;
     const id = parseInt(params.id);
 
     if (body.hasOwnProperty("done")) {
@@ -35,9 +36,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = parseInt(params.id);
     await deleteTodoFromDB(id);
     return NextResponse.json({ success: true });
