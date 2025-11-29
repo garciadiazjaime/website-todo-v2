@@ -60,7 +60,7 @@ export default function TodoList(props: { list: ListType, orientation: string })
             return updatedTodos.sort((a, b) => Number(a.done) - Number(b.done));
         });
 
-        await updateTodo(id, { done: newDoneState });
+        await updateTodo(id, { done: newDoneState, category: props.list });
     };
 
     const editTodo = async (id: number, newText: string) => {
@@ -68,13 +68,13 @@ export default function TodoList(props: { list: ListType, orientation: string })
             prev.map((todo) => (todo.id === id ? { ...todo, text: newText } : todo))
         );
 
-        await updateTodo(id, { text: newText });
+        await updateTodo(id, { text: newText, category: props.list });
     };
 
     const deleteTodo = async (id: number) => {
         setTodos((prev) => prev.filter((todo) => todo.id !== id));
 
-        await deleteTodoApi(id);
+        await deleteTodoApi(id, props.list);
     };
 
     const startEditing = (id: number) => {

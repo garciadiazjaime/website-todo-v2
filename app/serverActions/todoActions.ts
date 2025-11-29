@@ -48,6 +48,7 @@ export async function fetchTodosFromDB(list: ListType): Promise<Todo[]> {
         id: parseInt(item.id?.S || "0"),
         text: item.text?.S || "",
         done: item.done?.BOOL || false,
+        list: item.category?.S as ListType,
       }))
       .sort((a, b) => {
         if (a.done === b.done) {
@@ -88,17 +89,22 @@ export async function deleteTodosFromList(list: ListType) {
 
   // Delete each todo individually
   const deletePromises = todos.map((todo) => {
-    return deleteTodoFromDB(todo.id);
+    return deleteTodoFromDB(todo.id, todo.list);
   });
 
   await Promise.all(deletePromises);
 }
 
-export async function toggleTodoInDB(id: number, done: boolean) {
+export async function toggleTodoInDB(
+  id: number,
+  done: boolean,
+  category: ListType = "DEFAULT"
+) {
   const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: { S: id.toString() }, // DynamoDB format
+      id: { S: id.toString() },
+      category: { S: category },
     },
     UpdateExpression: "SET done = :done, updated_at = :updated_at",
     ExpressionAttributeValues: {
@@ -107,14 +113,19 @@ export async function toggleTodoInDB(id: number, done: boolean) {
     },
   });
 
-  await dynamoClient.send(command); // Use dynamoClient
+  await dynamoClient.send(command);
 }
 
-export async function editTodoInDB(id: number, text: string) {
+export async function editTodoInDB(
+  id: number,
+  text: string,
+  category: ListType = "DEFAULT"
+) {
   const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: { S: id.toString() }, // DynamoDB format
+      id: { S: id.toString() },
+      category: { S: category },
     },
     UpdateExpression: "SET #text = :text, updated_at = :updated_at",
     ExpressionAttributeNames: {
@@ -126,16 +137,20 @@ export async function editTodoInDB(id: number, text: string) {
     },
   });
 
-  await dynamoClient.send(command); // Use dynamoClient
+  await dynamoClient.send(command);
 }
 
-export async function deleteTodoFromDB(id: number) {
+export async function deleteTodoFromDB(
+  id: number,
+  category: ListType = "DEFAULT"
+) {
   const command = new DeleteItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: { S: id.toString() }, // DynamoDB format
+      id: { S: id.toString() },
+      category: { S: category },
     },
   });
 
-  await dynamoClient.send(command); // Use dynamoClient
+  await dynamoClient.send(command);
 }

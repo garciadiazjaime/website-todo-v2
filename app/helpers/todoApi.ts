@@ -21,7 +21,7 @@ export const deleteTodosList = async (list: ListType): Promise<void> => {
 
 export const updateTodo = async (
   id: number,
-  updates: { done?: boolean; text?: string }
+  updates: { done?: boolean; text?: string; category?: ListType }
 ): Promise<void> => {
   await fetch(`/api/todos/${id}`, {
     method: "PATCH",
@@ -30,6 +30,13 @@ export const updateTodo = async (
   });
 };
 
-export const deleteTodo = async (id: number): Promise<void> => {
-  await fetch(`/api/todos/${id}`, { method: "DELETE" });
+export const deleteTodo = async (
+  id: number,
+  category?: ListType
+): Promise<void> => {
+  await fetch(`/api/todos/${id}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category }),
+  });
 };

@@ -15,9 +15,9 @@ export async function PATCH(
     const id = parseInt(params.id);
 
     if (body.hasOwnProperty("done")) {
-      await toggleTodoInDB(id, body.done);
+      await toggleTodoInDB(id, body.done, body.category);
     } else if (body.hasOwnProperty("text")) {
-      await editTodoInDB(id, body.text);
+      await editTodoInDB(id, body.text, body.category);
     } else {
       return NextResponse.json(
         { error: "Invalid update data" },
@@ -40,8 +40,9 @@ export async function DELETE(
 ) {
   try {
     const params = await context.params;
+    const body = await request.json();
     const id = parseInt(params.id);
-    await deleteTodoFromDB(id);
+    await deleteTodoFromDB(id, body.category);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
