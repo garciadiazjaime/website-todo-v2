@@ -3,77 +3,37 @@ provider "aws" {
   region = var.region # Use the region variable
 }
 
-resource "aws_db_instance" "todo_db" {
-  identifier              = "todo-database"
-  engine                  = "mysql"
-  engine_version          = "8.0.37"      # Use a supported MySQL version
-  instance_class          = "db.t3.micro" # Free-tier eligible instance class
-  allocated_storage       = 20            # Minimum storage for free-tier eligibility
-  db_name                 = var.mysql_database   # Pull from environment variable
-  username                = var.mysql_user # Pull from environment variable
-  password                = var.mysql_pwd 
-  publicly_accessible     = true # Enable public access for direct connection
-  skip_final_snapshot     = true
-  deletion_protection     = false
-  backup_retention_period = 0 # Disable backups to avoid additional costs
-  parameter_group_name    = "default.mysql8.0"
-  db_subnet_group_name    = aws_db_subnet_group.todo_db_subnet_group.name
+resource "aws_dynamodb_table" "todos_table" {
+  name           = "todos"
+  billing_mode   = "PAY_PER_REQUEST" # On-demand pricing - free tier includes 25 WCU and 25 RCU per month
+  hash_key       = "id"
 
-  # Associate the security group
-  vpc_security_group_ids = [aws_security_group.db_access.id]
-
-  tags = {
-    Name = "TodoDatabase"
-  }
-}
-
-resource "aws_security_group" "db_access" {
-  name_prefix = "todo-db-access"
-  vpc_id      = aws_vpc.todo_vpc.id # Specify the VPC ID
-
-  ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  attribute {
+    name = "id"
+    type = "S" # String type
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"] # Allows outbound traffic to anywhere on the internet
+  # Free tier compliance settings
+  point_in_time_recovery {
+    enabled = false # Disable to avoid additional charges
+  }
+
+  server_side_encryption {
+    enabled = false # Use default encryption to stay in free tier
   }
 
   tags = {
-    Name = "TodoDBAccess"
+    Name = "TodosTable"
   }
 }
 
-resource "null_resource" "init_db" {
-  depends_on = [aws_db_instance.todo_db]
+# Output the DynamoDB table name for use in the application
+output "dynamodb_table_name" {
+  value = aws_dynamodb_table.todos_table.name
+  description = "The name of the DynamoDB table"
+}
 
-  provisioner "local-exec" {
-    environment = {
-      MYSQL_HOST     = replace(aws_db_instance.todo_db.endpoint, ":3306", "")
-      MYSQL_USER     = var.mysql_user
-      MYSQL_PWD      = var.mysql_pwd
-      MYSQL_DATABASE = aws_db_instance.todo_db.db_name # Dynamically pull the database name
-    }
-    command = <<EOT
-      echo "host: $MYSQL_HOST"
-      echo "Waiting for database to be ready..."
-
-      mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PWD -e "
-      USE $MYSQL_DATABASE;
-      CREATE TABLE IF NOT EXISTS todos (
-        id BIGINT PRIMARY KEY AUTO_INCREMENT,
-        text VARCHAR(255) NOT NULL,
-        done BOOLEAN NOT NULL DEFAULT false,
-        list VARCHAR(50) NOT NULL DEFAULT 'default',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      );"
-    EOT
-  }
+output "dynamodb_table_arn" {
+  value = aws_dynamodb_table.todos_table.arn
+  description = "The ARN of the DynamoDB table"
 }
