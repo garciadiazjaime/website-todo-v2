@@ -51,3 +51,6 @@ override.tf
 override.tf.json
 terraform.tfvars
 terraform.tfvars.json
+
+# Local Netlify folder
+.netlify

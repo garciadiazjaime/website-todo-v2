@@ -1,16 +1,14 @@
 "use server";
 
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
+  DynamoDBClient,
   ScanCommand,
-  PutCommand,
-  UpdateCommand,
-  DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
+  PutItemCommand,
+  UpdateItemCommand,
+  DeleteItemCommand,
+} from "@aws-sdk/client-dynamodb";
 
 import { Todo, ListType } from "@/app/types";
-import { loggerInfo } from "@/app/logger";
 
 const overrideNetlifyEnvVars = {
   ...(process.env.MY_AWS_ACCESS_KEY_ID &&
@@ -22,37 +20,34 @@ const overrideNetlifyEnvVars = {
     }),
 };
 
-const client = new DynamoDBClient({
-  region: process.env.AWS_REGION || "us-east-1",
+const dynamoClient = new DynamoDBClient({
+  region: "us-east-1",
   ...overrideNetlifyEnvVars,
 });
 
-const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = "todos";
 
 export async function fetchTodosFromDB(list: ListType): Promise<Todo[]> {
-  loggerInfo(`Fetching todos from DB for list`, { list });
+  console.log(`Fetching todos from DB for list`, list);
   try {
+    // Use Scan instead of Query since we're filtering by a non-key attribute
     const command = new ScanCommand({
       TableName: TABLE_NAME,
-      FilterExpression: "#list = :list",
-      ExpressionAttributeNames: {
-        "#list": "list",
-      },
+      FilterExpression: "category = :category",
       ExpressionAttributeValues: {
-        ":list": list,
+        ":category": { S: list },
       },
     });
 
-    const response = await docClient.send(command);
+    const response = await dynamoClient.send(command);
     const items = response.Items || [];
 
     // Sort by done status, then by id
     return items
       .map((item) => ({
-        id: parseInt(item.id),
-        text: item.text,
-        done: item.done,
+        id: parseInt(item.id?.S || "0"),
+        text: item.text?.S || "",
+        done: item.done?.BOOL || false,
       }))
       .sort((a, b) => {
         if (a.done === b.done) {
@@ -61,7 +56,7 @@ export async function fetchTodosFromDB(list: ListType): Promise<Todo[]> {
         return a.done ? 1 : -1;
       });
   } catch (error) {
-    loggerInfo("Error fetching todos from DB:", { error });
+    console.log(error);
     throw error;
   }
 }
@@ -70,18 +65,18 @@ export async function addTodosToDB(
   todos: { id: number; text: string; done: boolean; list: ListType }[]
 ) {
   const putPromises = todos.map((todo) => {
-    const command = new PutCommand({
+    const command = new PutItemCommand({
       TableName: TABLE_NAME,
       Item: {
-        id: todo.id.toString(), // DynamoDB hash key as string
-        text: todo.text,
-        done: todo.done,
-        list: todo.list,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        id: { S: todo.id.toString() }, // DynamoDB format
+        text: { S: todo.text },
+        done: { BOOL: todo.done },
+        category: { S: todo.list },
+        created_at: { S: new Date().toISOString() },
+        updated_at: { S: new Date().toISOString() },
       },
     });
-    return docClient.send(command);
+    return dynamoClient.send(command); // Use dynamoClient instead of docClient
   });
 
   await Promise.all(putPromises);
@@ -100,47 +95,47 @@ export async function deleteTodosFromList(list: ListType) {
 }
 
 export async function toggleTodoInDB(id: number, done: boolean) {
-  const command = new UpdateCommand({
+  const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: id.toString(),
+      id: { S: id.toString() }, // DynamoDB format
     },
     UpdateExpression: "SET done = :done, updated_at = :updated_at",
     ExpressionAttributeValues: {
-      ":done": done,
-      ":updated_at": new Date().toISOString(),
+      ":done": { BOOL: done },
+      ":updated_at": { S: new Date().toISOString() },
     },
   });
 
-  await docClient.send(command);
+  await dynamoClient.send(command); // Use dynamoClient
 }
 
 export async function editTodoInDB(id: number, text: string) {
-  const command = new UpdateCommand({
+  const command = new UpdateItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: id.toString(),
+      id: { S: id.toString() }, // DynamoDB format
     },
     UpdateExpression: "SET #text = :text, updated_at = :updated_at",
     ExpressionAttributeNames: {
       "#text": "text",
     },
     ExpressionAttributeValues: {
-      ":text": text,
-      ":updated_at": new Date().toISOString(),
+      ":text": { S: text },
+      ":updated_at": { S: new Date().toISOString() },
     },
   });
 
-  await docClient.send(command);
+  await dynamoClient.send(command); // Use dynamoClient
 }
 
 export async function deleteTodoFromDB(id: number) {
-  const command = new DeleteCommand({
+  const command = new DeleteItemCommand({
     TableName: TABLE_NAME,
     Key: {
-      id: id.toString(),
+      id: { S: id.toString() }, // DynamoDB format
     },
   });
 
-  await docClient.send(command);
+  await dynamoClient.send(command); // Use dynamoClient
 }
