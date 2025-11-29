@@ -10,6 +10,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 
 import { Todo, ListType } from "@/app/types";
+import { loggerInfo } from "@/app/logger";
 
 const overrideNetlifyEnvVars = {
   ...(process.env.MY_AWS_ACCESS_KEY_ID &&
@@ -30,33 +31,39 @@ const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = "todos";
 
 export async function fetchTodosFromDB(list: ListType): Promise<Todo[]> {
-  const command = new ScanCommand({
-    TableName: TABLE_NAME,
-    FilterExpression: "#list = :list",
-    ExpressionAttributeNames: {
-      "#list": "list",
-    },
-    ExpressionAttributeValues: {
-      ":list": list,
-    },
-  });
-
-  const response = await docClient.send(command);
-  const items = response.Items || [];
-
-  // Sort by done status, then by id
-  return items
-    .map((item) => ({
-      id: parseInt(item.id),
-      text: item.text,
-      done: item.done,
-    }))
-    .sort((a, b) => {
-      if (a.done === b.done) {
-        return a.id - b.id;
-      }
-      return a.done ? 1 : -1;
+  loggerInfo(`Fetching todos from DB for list`, { list });
+  try {
+    const command = new ScanCommand({
+      TableName: TABLE_NAME,
+      FilterExpression: "#list = :list",
+      ExpressionAttributeNames: {
+        "#list": "list",
+      },
+      ExpressionAttributeValues: {
+        ":list": list,
+      },
     });
+
+    const response = await docClient.send(command);
+    const items = response.Items || [];
+
+    // Sort by done status, then by id
+    return items
+      .map((item) => ({
+        id: parseInt(item.id),
+        text: item.text,
+        done: item.done,
+      }))
+      .sort((a, b) => {
+        if (a.done === b.done) {
+          return a.id - b.id;
+        }
+        return a.done ? 1 : -1;
+      });
+  } catch (error) {
+    loggerInfo("Error fetching todos from DB:", { error });
+    throw error;
+  }
 }
 
 export async function addTodosToDB(
