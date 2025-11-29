@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-    fetchTodosFromDB,
-    addTodosToDB,
-    deleteTodosFromList,
-    toggleTodoInDB,
-    editTodoInDB,
-    deleteTodoFromDB,
-} from "@/app/serverActions/todoActions";
 import { Todo, ListType } from "@/app/types";
+import { fetchTodos, addTodos as addTodosApi, deleteTodosList, updateTodo, deleteTodo as deleteTodoApi } from "@/app/helpers/todoApi";
 
 export default function TodoList(props: { list: ListType, orientation: string }) {
     const [todos, setTodos] = useState<Todo[]>([]);
@@ -19,14 +12,14 @@ export default function TodoList(props: { list: ListType, orientation: string })
     const [resetTriggered, setResetTriggered] = useState(false);
 
     useEffect(() => {
-        const fetchTodos = async () => {
+        const fetchTodosData = async () => {
             setLoading(true);
-            const fetchedTodos = await fetchTodosFromDB(props.list);
+            const fetchedTodos = await fetchTodos(props.list);
             setTodos(fetchedTodos);
             setLoading(false);
         };
 
-        fetchTodos();
+        fetchTodosData();
     }, []);
 
     const addTodos = async () => {
@@ -41,7 +34,7 @@ export default function TodoList(props: { list: ListType, orientation: string })
             }));
 
         if (resetTriggered) {
-            await deleteTodosFromList(props.list);
+            await deleteTodosList(props.list);
             setTodos(newTodos);
         } else {
             setTodos((prevTodos) => {
@@ -53,18 +46,21 @@ export default function TodoList(props: { list: ListType, orientation: string })
         setTextareaValue("");
         setResetTriggered(false);
 
-        await addTodosToDB(newTodos);
+        await addTodosApi(newTodos);
     };
 
     const toggleDone = async (id: number) => {
+        const currentTodo = todos.find((todo) => todo.id === id);
+        const newDoneState = !currentTodo?.done;
+
         setTodos((prev) => {
             const updatedTodos = prev.map((todo) =>
-                todo.id === id ? { ...todo, done: !todo.done } : todo
+                todo.id === id ? { ...todo, done: newDoneState } : todo
             );
             return updatedTodos.sort((a, b) => Number(a.done) - Number(b.done));
         });
 
-        await toggleTodoInDB(id, !todos.find((todo) => todo.id === id)?.done);
+        await updateTodo(id, { done: newDoneState });
     };
 
     const editTodo = async (id: number, newText: string) => {
@@ -72,13 +68,13 @@ export default function TodoList(props: { list: ListType, orientation: string })
             prev.map((todo) => (todo.id === id ? { ...todo, text: newText } : todo))
         );
 
-        await editTodoInDB(id, newText);
+        await updateTodo(id, { text: newText });
     };
 
     const deleteTodo = async (id: number) => {
         setTodos((prev) => prev.filter((todo) => todo.id !== id));
 
-        await deleteTodoFromDB(id);
+        await deleteTodoApi(id);
     };
 
     const startEditing = (id: number) => {
